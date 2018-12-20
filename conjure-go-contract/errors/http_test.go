@@ -83,17 +83,7 @@ func TestErrorFromResponse(t *testing.T) {
 }
 
 func TestWriteErrorResponse_ValidateJSON(t *testing.T) {
-	testSerializableError := errors.SerializableError{
-		ErrorCode:       errors.Timeout,
-		ErrorName:       "MyApplication:Timeout",
-		ErrorInstanceID: uuid.NewUUID(),
-		Parameters: json.RawMessage(`{
-    "metadata": {
-      "keyB": 4
-    }
-  }`),
-	}
-
+	testError := errors.NewError(errors.MustErrorType(errors.Timeout, "MyApplication:Timeout"), errors.SafeParam("metadata", map[string]interface{}{"keyB": 4}))
 	testErrorJSON := fmt.Sprintf(`{
   "errorCode": "TIMEOUT",
   "errorName": "MyApplication:Timeout",
@@ -103,10 +93,10 @@ func TestWriteErrorResponse_ValidateJSON(t *testing.T) {
       "keyB": 4
     }
   }
-}`, testSerializableError.ErrorInstanceID)
+}`, testError.InstanceID())
 
 	recorder := httptest.NewRecorder()
-	errors.WriteErrorResponse(recorder, testSerializableError)
+	errors.WriteErrorResponse(recorder, testError)
 	response := recorder.Result()
 
 	assert.Equal(t, "application/json; charset=utf-8", response.Header.Get("Content-Type"))

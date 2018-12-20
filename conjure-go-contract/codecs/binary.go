@@ -25,6 +25,9 @@ func (codecBinary) Decode(r io.Reader, v interface{}) error {
 	if !ok {
 		return werror.Error("failed to decode binary data into type which does not implement io.Writer")
 	}
+	if closer, ok := r.(io.ReadCloser); ok {
+		defer func() { _ = closer.Close() }()
+	}
 	if _, err := io.Copy(w, r); err != nil {
 		return werror.Convert(err)
 	}
@@ -43,6 +46,9 @@ func (codecBinary) Encode(w io.Writer, v interface{}) error {
 	r, ok := v.(io.Reader)
 	if !ok {
 		return werror.Error("failed to encode binary data from type which does not implement io.Reader")
+	}
+	if closer, ok := r.(io.ReadCloser); ok {
+		defer func() { _ = closer.Close() }()
 	}
 	if _, err := io.Copy(w, r); err != nil {
 		return werror.Convert(err)

@@ -49,20 +49,16 @@ func ErrorFromResponse(response *http.Response) (Error, error) {
 //
 // TODO This function is subject to change.
 func WriteErrorResponse(w http.ResponseWriter, e Error) {
-	marshalledError, err := codecs.JSON.Marshal(e)
-	if err != nil {
-		// Falling back to marshalling error without parameters.
-		// This should always succeed given.
-		marshalledError, _ = codecs.JSON.Marshal(
-			SerializableError{
-				ErrorCode:       e.Code(),
-				ErrorName:       e.Name(),
-				ErrorInstanceID: e.InstanceID(),
-				Parameters:      nil,
-			},
-		)
+	se := SerializableError{
+		ErrorCode:       e.Code(),
+		ErrorName:       e.Name(),
+		ErrorInstanceID: e.InstanceID(),
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// If the parameters fail to marshal, we will send the rest without params.
+	// The other fields are primitives that should always succesfully marshal.
+	se.Parameters, _ = codecs.JSON.Marshal(e.Parameters())
+
+	w.Header().Add("Content-Type", codecs.JSON.ContentType())
 	w.WriteHeader(e.Code().StatusCode())
-	_, _ = w.Write(marshalledError) // There is nothing we can do on write failure.
+	_ = codecs.JSON.Encode(w, e) // There is nothing we can do on write failure.
 }

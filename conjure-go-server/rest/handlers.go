@@ -15,7 +15,6 @@
 package rest
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/palantir/witchcraft-go-error"
@@ -38,24 +37,18 @@ func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			conjureErr = errors.NewInternal()
 		}
+
 		wErr := werror.Wrap(err, "error handling request", werror.SafeParams(map[string]interface{}{
 			"errorCode":       conjureErr.Code(),
 			"errorName":       conjureErr.Name(),
 			"errorInstanceID": conjureErr.InstanceID(),
 		}))
+		if conjureErr.Code().StatusCode() < 500 {
+			svc1log.FromContext(r.Context()).Info(err.Error(), svc1log.Stacktrace(wErr))
+		} else {
+			svc1log.FromContext(r.Context()).Error(err.Error(), svc1log.Stacktrace(wErr))
+		}
 
-		logError(r.Context(), conjureErr.Code().StatusCode(), wErr)
 		errors.WriteErrorResponse(w, conjureErr)
 	}
-}
-
-// ErrHandler is an ErrorHandler that creates a log in the request context's svc1log logger when an error is received.
-// This preserves request-scoped logging configuration added by wrouter.
-func logError(ctx context.Context, statusCode int, err error) {
-	logger := svc1log.FromContext(ctx)
-	logFn := logger.Info
-	if statusCode >= 500 {
-		logFn = logger.Error
-	}
-	logFn(err.Error(), svc1log.Stacktrace(err))
 }

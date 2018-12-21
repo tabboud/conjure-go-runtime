@@ -15,6 +15,7 @@
 package rest
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/palantir/witchcraft-go-error"
@@ -32,28 +33,36 @@ type HandlerFunc func(http.ResponseWriter, *http.Request) error
 // ServeHTTP implements the http.Handler interface
 func (h HandlerFunc) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if err := h(rw, req); err != nil {
-		var conjureErr errors.Error
-		if cErr, ok := werror.RootCause(err).(errors.Error); ok {
-			conjureErr = cErr
-		} else {
-			conjureErr = errors.NewInternal()
-		}
+		handleError(req.Context(), rw, err)
+	}
+}
 
-		// If the parameters fail to marshal, we will send the rest without params.
-		// The other fields are primitives that should always successfully marshal.
-		se, _ := errors.NewSerializableError(conjureErr)
-		rw.Header().Add("Content-Type", codecs.JSON.ContentType())
-		rw.WriteHeader(se.ErrorCode.StatusCode())
-		if err := codecs.JSON.Encode(rw, se); err != nil {
-			svc1log.FromContext(req.Context()).Warn("failed to encode error response", svc1log.Stacktrace(err))
-		}
+func handleError(ctx context.Context, rw http.ResponseWriter, err error) {
+	if err == nil {
+		return
+	}
 
-		// create and log witchcraft error
-		wErr := werror.Wrap(err, "error handling request", werror.Params(se))
-		if conjureErr.Code().StatusCode() < 500 {
-			svc1log.FromContext(req.Context()).Info(wErr.Error(), svc1log.Stacktrace(wErr))
-		} else {
-			svc1log.FromContext(req.Context()).Error(wErr.Error(), svc1log.Stacktrace(wErr))
-		}
+	var conjureErr errors.Error
+	if cErr, ok := werror.RootCause(err).(errors.Error); ok {
+		conjureErr = cErr
+	} else {
+		conjureErr = errors.NewInternal()
+	}
+
+	// If the parameters fail to marshal, we will send the rest without params.
+	// The other fields are primitives that should always successfully marshal.
+	se, _ := errors.NewSerializableError(conjureErr)
+	rw.Header().Add("Content-Type", codecs.JSON.ContentType())
+	rw.WriteHeader(se.ErrorCode.StatusCode())
+	if err := codecs.JSON.Encode(rw, se); err != nil {
+		svc1log.FromContext(ctx).Warn("failed to encode error response", svc1log.Stacktrace(err))
+	}
+
+	// Create and log witchcraft error
+	wErr := werror.Wrap(err, "error handling request", werror.Params(se))
+	if conjureErr.Code().StatusCode() < 500 {
+		svc1log.FromContext(ctx).Info(wErr.Error(), svc1log.Stacktrace(wErr))
+	} else {
+		svc1log.FromContext(ctx).Error(wErr.Error(), svc1log.Stacktrace(wErr))
 	}
 }

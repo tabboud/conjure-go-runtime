@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 
 	"github.com/palantir/pkg/uuid"
+
+	"github.com/palantir/conjure-go-runtime/conjure-go-contract/codecs"
 )
 
 // SerializableError is serializable representation of an error, it includes error code, name, instance id
@@ -43,4 +45,24 @@ type SerializableError struct {
 	ErrorName       string          `json:"errorName"`
 	ErrorInstanceID uuid.UUID       `json:"errorInstanceId"`
 	Parameters      json.RawMessage `json:"parameters,omitempty"`
+}
+
+func NewSerializableError(e Error) (se SerializableError, err error) {
+	se.ErrorCode = e.Code()
+	se.ErrorName = e.Name()
+	se.ErrorInstanceID = e.InstanceID()
+	se.Parameters, err = codecs.JSON.Marshal(e.Parameters())
+	return se, err
+}
+
+func (e SerializableError) SafeParams() map[string]interface{} {
+	return map[string]interface{}{
+		"errorCode":       e.ErrorCode,
+		"errorName":       e.ErrorName,
+		"errorInstanceID": e.ErrorInstanceID,
+	}
+}
+
+func (e SerializableError) UnsafeParams() map[string]interface{} {
+	return nil
 }

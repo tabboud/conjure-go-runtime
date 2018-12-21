@@ -55,7 +55,7 @@ func WriteErrorResponse(w http.ResponseWriter, e Error) {
 		ErrorInstanceID: e.InstanceID(),
 	}
 	// If the parameters fail to marshal, we will send the rest without params.
-	// The other fields are primitives that should always succesfully marshal.
+	// The other fields are primitives that should always successfully marshal.
 	se.Parameters, _ = codecs.JSON.Marshal(e.Parameters())
 
 	w.Header().Add("Content-Type", codecs.JSON.ContentType())

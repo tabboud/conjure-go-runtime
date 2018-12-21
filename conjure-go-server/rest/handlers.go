@@ -20,6 +20,7 @@ import (
 	"github.com/palantir/witchcraft-go-error"
 	"github.com/palantir/witchcraft-go-logging/wlog/svclog/svc1log"
 
+	"github.com/palantir/conjure-go-runtime/conjure-go-contract/codecs"
 	"github.com/palantir/conjure-go-runtime/conjure-go-contract/errors"
 )
 
@@ -29,8 +30,8 @@ import (
 type HandlerFunc func(http.ResponseWriter, *http.Request) error
 
 // ServeHTTP implements the http.Handler interface
-func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := h(w, r); err != nil {
+func (h HandlerFunc) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	if err := h(rw, req); err != nil {
 		var conjureErr errors.Error
 		if cErr, ok := werror.RootCause(err).(errors.Error); ok {
 			conjureErr = cErr
@@ -38,17 +39,21 @@ func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			conjureErr = errors.NewInternal()
 		}
 
-		wErr := werror.Wrap(err, "error handling request", werror.SafeParams(map[string]interface{}{
-			"errorCode":       conjureErr.Code(),
-			"errorName":       conjureErr.Name(),
-			"errorInstanceID": conjureErr.InstanceID(),
-		}))
-		if conjureErr.Code().StatusCode() < 500 {
-			svc1log.FromContext(r.Context()).Info(err.Error(), svc1log.Stacktrace(wErr))
-		} else {
-			svc1log.FromContext(r.Context()).Error(err.Error(), svc1log.Stacktrace(wErr))
+		// If the parameters fail to marshal, we will send the rest without params.
+		// The other fields are primitives that should always successfully marshal.
+		se, _ := errors.NewSerializableError(conjureErr)
+		rw.Header().Add("Content-Type", codecs.JSON.ContentType())
+		rw.WriteHeader(se.ErrorCode.StatusCode())
+		if err := codecs.JSON.Encode(rw, se); err != nil {
+			svc1log.FromContext(req.Context()).Warn("failed to encode error response", svc1log.Stacktrace(err))
 		}
 
-		errors.WriteErrorResponse(w, conjureErr)
+		// create and log witchcraft error
+		wErr := werror.Wrap(err, "error handling request", werror.Params(se))
+		if conjureErr.Code().StatusCode() < 500 {
+			svc1log.FromContext(req.Context()).Info(wErr.Error(), svc1log.Stacktrace(wErr))
+		} else {
+			svc1log.FromContext(req.Context()).Error(wErr.Error(), svc1log.Stacktrace(wErr))
+		}
 	}
 }

@@ -24,20 +24,30 @@
   version = "v0.1.3"
 
 [[projects]]
-  digest = "1:426da9dee8df98e99722e6e8ab4de8b96675d167af254ccc0dd135de147384eb"
+  digest = "1:63f6125d6645fd85a40e6636a5686eb9a7713c52ddee19d902b52ac99f95d33c"
+  name = "github.com/palantir/go-metrics"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "073ec68383a8f2243d5761897332f1a8397856e1"
+  version = "1.0.0"
+
+[[projects]]
+  digest = "1:3ae0815268f1953e8b0e8e813244c912f0292d93197ef0397b6ba3a15f514251"
   name = "github.com/palantir/pkg"
   packages = [
+    "bearertoken",
     "bytesbuffers",
     "metrics",
     "objmatcher",
     "retry",
+    "safejson",
     "tlsconfig",
     "uuid",
     "uuid/internal/uuid",
   ]
   pruneopts = "UT"
-  revision = "f026ea95cf70be60a1530c31c266ec3097e75d75"
-  version = "0.9.1"
+  revision = "7fd8d6e85a713f1ec5376c81b97c7ed1033c9816"
+  version = "0.10.0"
 
 [[projects]]
   branch = "develop"
@@ -100,14 +110,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d38f81081a389f1466ec98192cf9115a82158854d6f01e1c23e2e7554b97db71"
-  name = "github.com/rcrowley/go-metrics"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "3113b8401b8a98917cde58f8bbd42a1b1c03b1fd"
-
-[[projects]]
   digest = "1:c40d65817cdd41fac9aa7af8bed56927bb2d6d47e4fea566a74880f5c2b1c41e"
   name = "github.com/stretchr/testify"
   packages = [
@@ -120,13 +122,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f8292d035e3f59cbcf39fecb9ca1dd24ec20ae4f8a06750609ee4b71d60d0045"
+  digest = "1:e70accec7f5431012cac003a3ef21516972d52df9f1702e3378f88e2206c8a0e"
   name = "golang.org/x/net"
   packages = [
     "http/httpguts",
     "http2",
     "http2/hpack",
     "idna",
+    "internal/socks",
+    "proxy",
   ]
   pruneopts = "UT"
   revision = "351d144fa1fc0bd934e2408202be0c29f25e35a0"
@@ -166,10 +170,12 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/palantir/pkg/bearertoken",
     "github.com/palantir/pkg/bytesbuffers",
     "github.com/palantir/pkg/metrics",
     "github.com/palantir/pkg/objmatcher",
     "github.com/palantir/pkg/retry",
+    "github.com/palantir/pkg/safejson",
     "github.com/palantir/pkg/tlsconfig",
     "github.com/palantir/pkg/uuid",
     "github.com/palantir/witchcraft-go-error",
@@ -180,6 +186,7 @@
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "golang.org/x/net/http2",
+    "golang.org/x/net/proxy",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"

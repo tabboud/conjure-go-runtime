@@ -1,4 +1,6 @@
-# conjure-go-runtime
+conjure-go-runtime
+==================
+[![](https://godoc.org/github.com/palantir/conjure-go-runtime?status.svg)](http://godoc.org/github.com/palantir/conjure-go-runtime)
 
 Golang packages for Conjure-flavored RPC. The full specification is at [github.com/palantir/conjure/docs/spec/wire.md](https://github.com/palantir/conjure/blob/master/docs/spec/wire.md).
 
@@ -7,13 +9,13 @@ Packages:
 * `conjure-go-contract/codecs`: The `codecs` package defines encode/decode behavior for multiple serialization formats. These are used to manipulate request and response bodies.
 * `conjure-go-contract/errors`: The `errors` package defines conjure-formatted error types as described in the [Conjure wire spec](https://github.com/palantir/conjure/blob/master/docs/spec/wire.md#55-conjure-errors).
 * `conjure-go-contract/uuid`:  The `uuid` package provides an implementation of the UUID as defined in RFC 4122.
-* `conjure-go-client/httpclient`: The `httclient` package provides a general HTTP client package which can provide a standard library `*http.Client` or a more opinionated `httpclient.Client` implementation. The majority of the below documentation describes this package.
+* `conjure-go-client/httpclient`: The `httpclient` package provides a general HTTP client package which can provide a standard library `*http.Client` or a more opinionated `httpclient.Client` implementation. The majority of the documentation below describes this package.
 
 ## Client Usage
 
 The `NewHTTPClient(params ...ClientParam)` constructor returns a standard library `*http.Client` configured using Palantir best practices.
-It offers customizability via ClientParams passed as arguments; see `client_params.go` for the majority of general-purpose params.
-The returned client can be used wherever http.DefaultClient can be.
+It offers customizability via ClientParams passed as arguments; see [`client_params.go`](conjure-go-client/httpclient/client_params.go) for the majority of general-purpose params.
+The returned client can be used wherever `http.DefaultClient` can be.
 
 ```go
 var conf httpclient.ServicesConfig // populate in-code or from yaml

@@ -64,15 +64,17 @@ func TestRequestRetrier_UnlimitedAttempts(t *testing.T) {
 	require.Equal(t, uri, "https://example.com")
 	require.Lessf(t, time.Since(startTime), 99*time.Millisecond, "first GetNextURI should not have any delay")
 
+	startTime = time.Now()
 	uri, _ = r.GetNextURI(nil, nil)
 	require.Equal(t, uri, "https://example.com")
-	assert.Greater(t, time.Since(startTime), 100*time.Millisecond, "delay should be at least 1 backoffs (100)")
-	assert.Less(t, time.Since(startTime), 300*time.Millisecond, "delay should be less than 2 backoffs (100+200)")
+	assert.Greater(t, time.Since(startTime), 100*time.Millisecond, "delay should be at least 1 backoff")
+	assert.Less(t, time.Since(startTime), 200*time.Millisecond, "delay should be less than 2 backoffs")
 
+	startTime = time.Now()
 	uri, _ = r.GetNextURI(nil, nil)
 	require.Equal(t, uri, "https://example.com")
-	assert.Greater(t, time.Since(startTime), 300*time.Millisecond, "delay should be at least 2 backoffs (100+200)")
-	assert.Less(t, time.Since(startTime), 700*time.Millisecond, "delay should be less than 3 backoffs (100+200+400)")
+	assert.Greater(t, time.Since(startTime), 200*time.Millisecond, "delay should be at least 2 backoffs")
+	assert.Less(t, time.Since(startTime), 400*time.Millisecond, "delay should be less than 3 backoffs")
 
 	// Success should stop retries
 	uri, _ = r.GetNextURI(&http.Response{StatusCode: 200}, nil)

@@ -18,9 +18,11 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/palantir/pkg/retry"
 	werror "github.com/palantir/witchcraft-go-error"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,12 +54,29 @@ func TestRequestRetrier_AttemptCount(t *testing.T) {
 }
 
 func TestRequestRetrier_UnlimitedAttempts(t *testing.T) {
-	r := NewRequestRetrier([]string{"https://example.com"}, retry.Start(context.Background()), 0)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	r := NewRequestRetrier([]string{"https://example.com"}, retry.Start(ctx, retry.WithInitialBackoff(100*time.Millisecond)), 0)
+
+	startTime := time.Now()
 	uri, _ := r.GetNextURI(nil, nil)
 	require.Equal(t, uri, "https://example.com")
-	// run it again
+	require.Lessf(t, time.Since(startTime), 99*time.Millisecond, "first GetNextURI should not have any delay")
+
 	uri, _ = r.GetNextURI(nil, nil)
 	require.Equal(t, uri, "https://example.com")
+	assert.Greater(t, time.Since(startTime), 100*time.Millisecond, "delay should be at least 1 backoffs (100)")
+	assert.Less(t, time.Since(startTime), 300*time.Millisecond, "delay should be less than 2 backoffs (100+200)")
+
+	uri, _ = r.GetNextURI(nil, nil)
+	require.Equal(t, uri, "https://example.com")
+	assert.Greater(t, time.Since(startTime), 300*time.Millisecond, "delay should be at least 2 backoffs (100+200)")
+	assert.Less(t, time.Since(startTime), 700*time.Millisecond, "delay should be less than 3 backoffs (100+200+400)")
+
+	// Success should stop retries
+	uri, _ = r.GetNextURI(&http.Response{StatusCode: 200}, nil)
+	require.Empty(t, uri)
 }
 
 func TestRequestRetrier_UsesLocationHeader(t *testing.T) {

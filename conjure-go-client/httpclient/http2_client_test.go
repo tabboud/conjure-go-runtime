@@ -142,11 +142,18 @@ func (p *proxyServer) handleConnection(t *testing.T, in net.Conn, stopCh chan st
 }
 
 func (p *proxyServer) serve(t *testing.T, stopCh chan struct{}, expectErr bool) {
+	// accept connections on our server
 	conn, err := p.ln.Accept()
 	if expectErr {
 		require.Error(t, err)
+		return
 	} else {
 		require.NoError(t, err)
+	}
+	if conn != nil {
+		t.Logf("Accepted connection: %v", conn.LocalAddr())
+	} else {
+		t.Logf("Accepted connection: closed")
 	}
 	atomic.AddInt32(&p.dialCount, 1)
 	go p.handleConnection(t, conn, stopCh)

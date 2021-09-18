@@ -382,14 +382,14 @@ func TestMetricsMiddleware_InFlightRequests(t *testing.T) {
 	rootRegistry := metrics.NewRootMetricsRegistry()
 	ctx := metrics.WithRegistry(context.Background(), rootRegistry)
 	serviceNameTag := metrics.MustNewTag("service-name", "test-service")
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		dialerMetric := rootRegistry.Counter(httpclient.MetricConnInflight, serviceNameTag).Count()
 		assert.Equal(t, int64(1), dialerMetric, "%s should be nonzero during a request", httpclient.MetricConnInflight)
 		clientMetric := rootRegistry.Counter(httpclient.MetricRequestInFlight, serviceNameTag).Count()
 		assert.Equal(t, int64(1), clientMetric, "%s should be nonzero during a request", httpclient.MetricRequestInFlight)
 		w.WriteHeader(200)
-	}))
+	})
+	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
 	client, err := httpclient.NewClient(
@@ -416,7 +416,17 @@ func TestMetricsMiddleware_InFlightRequests(t *testing.T) {
 
 	dialerMetric := rootRegistry.Counter(httpclient.MetricConnInflight, serviceNameTag)
 	assert.Equal(t, int64(1), dialerMetric.Count(), "%s should be nonzero immediately after a request", httpclient.MetricConnInflight)
+	srv.CloseClientConnections()
 	srv.Close()
 	// N.B. (bmoylan): if this test ends up being flaky, it's because the client-side closes fast but asynchronously and we could add a small time.Sleep.
+	fmt.Println("asserting")
 	assert.Equal(t, int64(0), dialerMetric.Count(), "%s should be zero after the server closes the connection", httpclient.MetricConnInflight)
+	fmt.Println("already asserted")
+
+	// This is like restaurant closing for the night with customers still there.
+	// Every customer leaves at different times based on what they need to pack up, but I (the server) just tell them
+	// when I am closing and move on with my work. At the end of me closing, I have to ask, "is everything
+	// as I expect?". Majority of the time the answer is "Yes", but sometimes it can be "No" when customers take
+	// longer than me to close and leave. The solution is then to wait for them to leave before I assert expectations.
+	//<-time.After(time.Second)
 }

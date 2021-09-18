@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -230,6 +231,7 @@ type metricsWrappedConn struct {
 }
 
 func (m *metricsWrappedConn) Close() error {
+	fmt.Println("Close called now")
 	m.counter.Dec(1)
 	return m.Conn.Close()
 }
